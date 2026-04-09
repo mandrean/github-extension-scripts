@@ -34,6 +34,8 @@ Adds a dropdown next to the **"X / Y viewed"** counter on PR "Files changed" pag
 
 [`github-hide-viewed-files.user.js`](github-hide-viewed-files.user.js)
 
+<img width="335" height="318" alt="image" src="https://github.com/user-attachments/assets/5396b7fa-e090-451e-99a5-93d5d0655a25" />
+
 Adds a **"Hide viewed files"** toggle to the diff settings dropdown (gear icon) on PR "Files changed" pages. When enabled, viewed/collapsed file diffs are hidden from the diff list and viewed files are removed from the sidebar file tree, giving you a cleaner view of only the files left to review.
 
 **How it works:** Tags each virtualized diff row based on its "Viewed" button state (`aria-pressed`) and each sidebar tree item via React fiber (`file.diff.markedAsViewed`). A CSS rule collapses tagged rows and hides tagged tree items when the toggle is active. State is persisted in `sessionStorage`.
