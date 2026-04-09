@@ -22,6 +22,8 @@ Adds a **"Mark all as done"** button to GitHub notification groups. GitHub's not
 
 [`github-reviewed-files.user.js`](github-reviewed-files.user.js)
 
+![screenshot](https://github.com/user-attachments/assets/bb6bd2dc-3157-4c66-b075-9509572d8bbd)
+
 Adds a dropdown next to the **"X / Y viewed"** counter on PR "Files changed" pages, letting you copy a plain-text list of viewed or unviewed file paths to your clipboard.
 
 **How it works:** Reads file paths and viewed state from React's internal fiber tree (`file.diff.markedAsViewed`) on the file tree sidebar. Works on large PRs where GitHub lazily loads diffs.
