@@ -20,6 +20,10 @@
     <path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"/>
   </svg>`;
 
+  const X_SVG = `<svg aria-hidden="true" focusable="false" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" style="color: #cf222e;">
+    <path d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.749.749 0 0 1 1.275.326.749.749 0 0 1-.215.734L9.06 8l3.22 3.22a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L8 9.06l-3.22 3.22a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06Z"/>
+  </svg>`;
+
   const CHEVRON_SVG = `<svg aria-hidden="true" focusable="false" viewBox="0 0 16 16" width="16" height="16" fill="currentColor">
     <path d="m4.427 7.427 3.396 3.396a.25.25 0 0 0 .354 0l3.396-3.396A.25.25 0 0 0 11.396 7H4.604a.25.25 0 0 0-.177.427Z"/>
   </svg>`;
@@ -96,9 +100,36 @@
 
   // --- UI helpers ---
 
-  function animateIcon(iconEl) {
-    iconEl.innerHTML = CHECK_SVG;
+  function animateIcon(iconEl, success) {
+    iconEl.innerHTML = success ? CHECK_SVG : X_SVG;
     setTimeout(() => { iconEl.innerHTML = COPY_SVG; }, 2000);
+  }
+
+  // Fallback copy using execCommand for contexts where the async clipboard
+  // API is unavailable or rejects (e.g. missing user gesture, missing focus).
+  function fallbackCopy(text) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0';
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch (_) { ok = false; }
+    document.body.removeChild(ta);
+    return ok;
+  }
+
+  async function copyToClipboard(text) {
+    try {
+      if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+        await navigator.clipboard.writeText(text);
+        return true;
+      }
+    } catch (err) {
+      console.warn('[ghrc] clipboard.writeText failed, using fallback:', err);
+    }
+    return fallbackCopy(text);
   }
 
   function createMenuItem(label, viewedOnly) {
@@ -121,12 +152,12 @@
     btn.appendChild(labelEl);
     item.appendChild(btn);
 
-    btn.addEventListener('click', (e) => {
+    btn.addEventListener('click', async (e) => {
       e.stopPropagation();
       const files = extractFiles(viewedOnly);
-      navigator.clipboard.writeText(files.join('\n')).then(() => {
-        animateIcon(iconEl);
-      });
+      const ok = await copyToClipboard(files.join('\n'));
+      animateIcon(iconEl, ok);
+      if (!ok) console.warn('[ghrc] copy failed — clipboard and execCommand both unavailable');
     });
 
     return item;
