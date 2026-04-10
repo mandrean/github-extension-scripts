@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         GitHub PR Reviewed Files Copier
 // @namespace    https://github.com/mandrean
-// @version      1.0
+// @version      1.1
 // @description  Adds a dropdown next to the "X / Y viewed" counter to copy lists of viewed/unviewed files
 // @match        https://github.com/*/pull/*/files
 // @match        https://github.com/*/pull/*/changes
@@ -30,17 +30,36 @@
 
   // --- React fiber helpers ---
 
+  function unwrap(value) {
+    try {
+      return value && value.wrappedJSObject ? value.wrappedJSObject : value;
+    } catch (_) {
+      return value;
+    }
+  }
+
   function getFiberKey(el) {
-    return Object.keys(el).find(k => k.startsWith('__reactFiber'));
+    const rawEl = unwrap(el);
+    if (!rawEl) return null;
+    try {
+      return Reflect.ownKeys(rawEl).find(k =>
+        typeof k === 'string' &&
+        (k.startsWith('__reactFiber') || k.startsWith('__reactProps'))
+      ) || null;
+    } catch (_) {
+      return null;
+    }
   }
 
   function findFileProp(fiber, depth) {
-    if (!fiber || depth > 30) return null;
-    const props = fiber.memoizedProps || fiber.pendingProps || {};
-    if (props.file && typeof props.file === 'object' && props.file.filePath) {
-      return props.file;
+    const rawFiber = unwrap(fiber);
+    if (!rawFiber || depth > 30) return null;
+    const props = unwrap(rawFiber.memoizedProps) || unwrap(rawFiber.pendingProps) || {};
+    const file = unwrap(props.file);
+    if (file && typeof file === 'object' && file.filePath) {
+      return file;
     }
-    return findFileProp(fiber.return, depth + 1);
+    return findFileProp(rawFiber.return, depth + 1);
   }
 
   function extractFiles(viewedOnly) {
@@ -49,9 +68,10 @@
     const seen = new Set();
 
     for (const item of treeItems) {
+      const rawItem = unwrap(item);
       const fiberKey = getFiberKey(item);
       if (!fiberKey) continue;
-      const fileObj = findFileProp(item[fiberKey], 0);
+      const fileObj = findFileProp(rawItem?.[fiberKey], 0);
       if (!fileObj || !fileObj.filePath) continue;
       if (seen.has(fileObj.filePath)) continue;
       seen.add(fileObj.filePath);
